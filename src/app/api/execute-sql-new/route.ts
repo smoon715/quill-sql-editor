@@ -52,8 +52,29 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Extract table name
-      const tableName = statement.from?.[0]?.table
+      // Extract table name - handle different AST structures safely
+      let tableName: string | undefined
+      
+      try {
+        if (statement.from) {
+          if (Array.isArray(statement.from)) {
+            // If from is an array, get the first element's table
+            const firstFrom = statement.from[0]
+            if (firstFrom && typeof firstFrom === 'object') {
+              // Convert to unknown first, then to the desired type
+              const fromObj = firstFrom as unknown as { [key: string]: unknown }
+              tableName = (fromObj['table'] as string) || (fromObj['name'] as string)
+            }
+          } else if (typeof statement.from === 'object') {
+            // If from is a single object, get its table/name property
+            const fromObj = statement.from as unknown as { [key: string]: unknown }
+            tableName = (fromObj['table'] as string) || (fromObj['name'] as string)
+          }
+        }
+      } catch (error) {
+        console.warn('Error extracting table name from AST:', error)
+      }
+      
       if (!tableName || tableName !== 'players') {
         return NextResponse.json(
           { error: 'Only queries on the "players" table are supported' },
