@@ -482,12 +482,6 @@ export default function SqlEditor({ suggestedQuery }: SqlEditorProps) {
                strings: true
              },
 
-             // Enable basic dropdown suggestions
-             quickSuggestions: {
-               other: true,
-               comments: true,
-               strings: true
-             },
              suggest: {
                showKeywords: true,
                showSnippets: false,
@@ -513,27 +507,7 @@ export default function SqlEditor({ suggestedQuery }: SqlEditorProps) {
              acceptSuggestionOnCommitCharacter: true,
              acceptSuggestionOnEnter: 'on',
              tabCompletion: 'on',
-             suggestSelection: 'first',
-             suggestShowKeywords: true,
-             suggestShowSnippets: true,
-             suggestShowFunctions: true,
-             suggestShowVariables: true,
-             suggestShowClasses: true,
-             suggestShowModules: true,
-             suggestShowProperties: true,
-             suggestShowEvents: true,
-             suggestShowOperators: true,
-             suggestShowUnits: true,
-             suggestShowValues: true,
-             suggestShowConstants: true,
-             suggestShowEnums: true,
-             suggestShowEnumMembers: true,
-             suggestShowColors: true,
-             suggestShowFiles: true,
-             suggestShowReferences: true,
-             suggestShowFolders: true,
-             suggestShowTypeParameters: true,
-             suggestShowWords: true
+             suggestSelection: 'first'
            }}
          />
          
