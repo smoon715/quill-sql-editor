@@ -177,7 +177,7 @@ export default function SqlEditor({ suggestedQuery }: SqlEditorProps) {
     if (sqlQuery.trim() && sqlQuery.length > 3) {
       aiTimeoutRef.current = setTimeout(() => {
         fetchAiSuggestions(sqlQuery)
-      }, 1500) // 1.5 second delay
+      }, 750) // 0.75 second delay
     } else {
       setShowAiSuggestions(false)
     }

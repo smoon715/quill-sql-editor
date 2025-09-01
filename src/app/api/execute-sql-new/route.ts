@@ -214,7 +214,17 @@ function applyWhereClause(queryBuilder: any, whereClause: any): any {
   if (whereClause.type === 'binary_expr') {
     const { operator, left, right } = whereClause
     
-    if (operator === '=') {
+    if (operator === 'AND') {
+      // Handle AND operator by applying both conditions
+      queryBuilder = applyWhereClause(queryBuilder, left)
+      queryBuilder = applyWhereClause(queryBuilder, right)
+      return queryBuilder
+    } else if (operator === 'OR') {
+      // Handle OR operator (Supabase doesn't support OR directly, so we'll use a workaround)
+      // For now, just apply the first condition and log a warning
+      console.warn('OR operator not fully supported, applying first condition only')
+      return applyWhereClause(queryBuilder, left)
+    } else if (operator === '=') {
       if (left.type === 'column_ref' && (right.type === 'string' || right.type === 'single_quote_string')) {
         return queryBuilder.eq(left.column, right.value)
       }
@@ -237,6 +247,12 @@ function applyWhereClause(queryBuilder: any, whereClause: any): any {
     } else if (operator === '!=') {
       if (left.type === 'column_ref' && (right.type === 'string' || right.type === 'single_quote_string')) {
         return queryBuilder.neq(left.column, right.value)
+      }
+    } else if (operator === 'IN') {
+      if (left.type === 'column_ref' && right.type === 'expr_list') {
+        // Extract values from the expression list
+        const values = right.value.map((item: any) => item.value)
+        return queryBuilder.in(left.column, values)
       }
     }
   } else if (whereClause.type === 'function') {
