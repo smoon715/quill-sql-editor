@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
       const ast = parser.astify(cleanSql)
       console.log('Parsed SQL AST:', JSON.stringify(ast, null, 2))
       
+      // Debug: Check if this is a LIMIT query
+      if (cleanSql.toLowerCase().includes('limit')) {
+        console.log('LIMIT query detected, full AST:', JSON.stringify(ast, null, 2))
+      }
+      
       // Handle array of statements (take first one)
       const statement = Array.isArray(ast) ? ast[0] : ast
       
@@ -127,7 +132,23 @@ export async function POST(request: NextRequest) {
 
       // Handle LIMIT
       if (statement.limit) {
-        queryBuilder = queryBuilder.limit(statement.limit.value)
+        console.log('LIMIT clause found:', statement.limit)
+        let limitValue: number
+        
+        if (Array.isArray(statement.limit.value)) {
+          // Extract the number from the array structure
+          const firstItem = statement.limit.value[0] as any
+          limitValue = firstItem?.value || 10
+        } else if (typeof statement.limit.value === 'object' && (statement.limit.value as any)?.value) {
+          // Direct object with value property
+          limitValue = (statement.limit.value as any).value
+        } else {
+          // Fallback
+          limitValue = statement.limit.value as number || 10
+        }
+        
+        console.log('Extracted LIMIT value:', limitValue)
+        queryBuilder = queryBuilder.limit(limitValue)
       }
 
       // Execute the query
@@ -156,27 +177,33 @@ export async function POST(request: NextRequest) {
     } catch (parseError) {
       console.error('SQL parsing error:', parseError)
       
-      // Fallback to basic query if parsing fails
-      console.log('SQL parsing failed, attempting basic query...')
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('players')
-        .select('*')
-        .limit(50)
-      
-      if (fallbackError) throw fallbackError
-      
+      // Return the actual error message instead of falling back
+      const errorMessage = parseError instanceof Error ? parseError.message : 'SQL parsing failed'
       return NextResponse.json({ 
-        data: fallbackData,
-        totalRows: fallbackData?.length || 0,
-        originalQuery: sql,
-        message: 'Query executed with fallback - SQL parsing failed'
-      })
+        error: errorMessage,
+        originalQuery: sql
+      }, { status: 400 })
     }
 
   } catch (error) {
     console.error('SQL execution error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to execute SQL query'
+    if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === 'object' && error !== null) {
+      // Handle Supabase errors
+      const supabaseError = error as any
+      if (supabaseError.message) {
+        errorMessage = supabaseError.message
+      } else if (supabaseError.error_description) {
+        errorMessage = supabaseError.error_description
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to execute SQL query' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
